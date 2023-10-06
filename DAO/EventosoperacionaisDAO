@@ -1,0 +1,337 @@
+package DAO;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+
+
+import conexao.Conexao;
+import Metodos.*;
+
+public class EventosoperacionaisDAO {
+    public static boolean cadastraevento (CriarEventos evento){
+
+        String sql = "INSERT INTO EVENTO (NOME_CLIENTE,NOME_EVENTO, DATA_EVENTO,HORA_EVENTO, EXTRA_EVENTO,ACESSO_EVENTO,PRECO_INGRESSO,NUM_CONVIDADOS,ATRACAO_EVENTO,CLASSIFICACAO,TIPO_EVENTO,INGRE_CONVIT,INGRESSOS_RESTANTES) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)";
+
+        PreparedStatement ps = null;
+        try {
+            ps = Conexao.getConexao().prepareStatement(sql);
+
+            
+            ps.setString(1, evento.getNome_evento());
+            ps.setString(2, evento.getNome_evento());
+            ps.setString(3, evento.getData());
+            ps.setString(4, evento.getHora());
+            ps.setString(5, evento.getExtras());
+            ps.setString(6, evento.getAcesso());
+            ps.setString(7, evento.getPreco_total());
+            ps.setNString(8, evento.getConvidados());
+            ps.setString(9, evento.getAtracao());
+            ps.setString(10, evento.getClassificacao());
+            ps.setString(11, evento.getTipo_evento());
+            ps.setString(12, evento.getIngressoOuConvite());
+            ps.setInt(13, CriarEventos.getCapacidadeMaxima());
+
+            ps.execute();
+            ps.close();
+            return true;
+        } catch (SQLException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            return false;
+        } 
+    }
+    public static boolean cadastraCliente(Cliente cliente) {
+        String sql = "INSERT INTO CLIENTES (nome_cliente, email_cliente, telefone_cliente, senha_cliente) VALUES (?, ?, ?, ?)";
+        try (PreparedStatement ps = Conexao.getConexao().prepareStatement(sql)) {
+            ps.setString(1, cliente.getNome_cliente());
+            ps.setString(2, cliente.getEmail_cliente());
+            ps.setString(3, cliente.getNumero_tel_cliente()); // Use setInt para campos numéricos
+            ps.setString(4, cliente.getSenha_cliente()); // Use setInt para campos numéricos
+            int rowCount = ps.executeUpdate();
+            return rowCount > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public static ArrayList<CriarEventos> listarEventos() {
+        String sql = "SELECT * FROM EVENTO";
+        ArrayList<CriarEventos> retorno = new ArrayList<>();
+        
+        try {
+            PreparedStatement stmt = Conexao.getConexao().prepareStatement(sql);
+            ResultSet rs = stmt.executeQuery(sql);
+            int i = 0;
+            
+           while (rs.next()) {
+                retorno.add(new CriarEventos());
+                retorno.get(i).setId(rs.getInt("id")); 
+                retorno.get(i).setNome_evento(rs.getString("nome_evento"));
+                retorno.get(i).setData(rs.getString("data_evento"));
+                retorno.get(i).setExtras(rs.getString("extra_evento"));
+                retorno.get(i).setClassificacao(rs.getString("classificacao"));
+                retorno.get(i).setAcesso(rs.getString("acesso_evento"));
+                retorno.get(i).setAtracao(rs.getString("atracao_evento"));
+                retorno.get(i).setIngressoOuConvite(rs.getString("ingre_convit"));
+                retorno.get(i).setTipo_evento(rs.getString("tipo_evento"));
+                if(retorno.get(i).getAcesso().equalsIgnoreCase("PRIVADO")){
+                    retorno.get(i).setConvidados(rs.getString("num_convidados"));
+                    
+                }
+                else if(retorno.get(i).getAcesso().equalsIgnoreCase("PUBLICO")){
+                    retorno.get(i).setPreco_ingresso(rs.getString("preco_ingresso"));
+                    retorno.get(i).setQuantidade_disponivel(rs.getInt("ingressos_restantes"));
+                    
+                }
+                
+                i++;
+                
+
+                
+                
+            }
+
+            stmt.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return retorno;
+    }
+    public static ArrayList<Cliente> listarClientes(){
+        String sql = "SELECT * FROM CLIENTES";
+        ArrayList<Cliente> retorno = new ArrayList<>();
+        
+        try {
+            PreparedStatement stmt = Conexao.getConexao().prepareStatement(sql);
+            ResultSet rs = stmt.executeQuery(sql);
+            int i = 0;
+            while (rs.next()){
+                retorno.add(new Cliente());
+                retorno.get(i).setNome_cliente(rs.getString("nome_cliente"));
+                retorno.get(i).setEmail_cliente(rs.getString("email_cliente"));
+                retorno.get(i).setNumero_tel_cliente(rs.getString("telefone_cliente"));
+                retorno.get(i).setSenha_cliente(rs.getString("senha_cliente"));
+                i++;
+            }
+        }
+        catch(SQLException e){
+            e.printStackTrace();
+        }
+        return retorno;
+    }
+
+    public boolean verificarLogin(String email, String senha)  {
+        Connection connection = null;
+        PreparedStatement preparedStatement = null;
+        ResultSet resultSet = null;
+    
+        try {
+            connection = Conexao.getConexao();
+    
+            String sql = "SELECT * FROM CLIENTES WHERE EMAIL_CLIENTE = ? AND SENHA_CLIENTE = ?";
+            preparedStatement = connection.prepareStatement(sql);
+            preparedStatement.setString(1, email);
+            preparedStatement.setString(2, senha);
+    
+            resultSet = preparedStatement.executeQuery();
+    
+            return resultSet.next();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false; 
+        } finally {
+            if (resultSet != null) {
+                try {
+                    resultSet.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+            if (preparedStatement != null) {
+                try {
+                    preparedStatement.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+            if (connection != null) {
+                try {
+                    connection.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+    
+
+
+    public static CriarEventos buscarEventoPorNome(String nomeEvento) {
+        CriarEventos eventoEncontrado = new CriarEventos();
+    
+        String sql = "SELECT * FROM EVENTO WHERE nome_evento = ?";
+        try {
+            PreparedStatement ps = Conexao.getConexao().prepareStatement(sql);
+            ps.setString(1, nomeEvento);
+    
+            ResultSet rs = ps.executeQuery();
+    
+            if (rs.next()) {
+                eventoEncontrado.setId(rs.getInt("id"));
+                eventoEncontrado.setNome_evento(rs.getString("nome_evento"));
+                eventoEncontrado.setData(rs.getString("data_evento"));
+                eventoEncontrado.setExtras(rs.getString("extras_evento"));
+                eventoEncontrado.setClassificacao(rs.getString("classificacao"));
+                eventoEncontrado.setAcesso(rs.getString("acesso_evento"));
+                eventoEncontrado.setAtracao(rs.getString("atracao_evento"));
+                eventoEncontrado.setIngressoOuConvite(rs.getString("ingre_convit"));
+                eventoEncontrado.setTipo_evento(rs.getString("tipo_evento"));
+                if(eventoEncontrado.getAcesso().equalsIgnoreCase("PRIVADO")){
+                   eventoEncontrado.setConvidados(rs.getString("num_convidados"));
+                }
+                else if(eventoEncontrado.getAcesso().equalsIgnoreCase("PUBLICO")){
+                    eventoEncontrado.setPreco_ingresso(rs.getString("preco_ingresso"));
+                    eventoEncontrado.setQuantidade_disponivel(rs.getInt("ingressos_restantes"));
+                    
+                }
+                //try {
+                //    eventoEncontrado.setPreco_ingresso(rs.getDouble("preco_ingresso"));
+                //    eventoEncontrado.setQuantidade_disponivel(rs.getInt("quantidade_disponivel"));
+                //    eventoEncontrado.setIngresso(true);
+                //} catch (NumberFormatException e) {
+                //    eventoEncontrado.setIngresso(false);
+                //}
+            }
+            ps.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    
+        return eventoEncontrado;
+    }
+
+    public static Cliente buscarCliente(String email,String senha){
+        Cliente cliente = new Cliente();
+
+        String sql = "SELECT * FROM CLIENTES WHERE email_cliente = ?";
+        try {
+            PreparedStatement ps = Conexao.getConexao().prepareStatement(sql);
+            ps.setString(1, email);
+
+            ResultSet rs = ps.executeQuery();
+            if(rs.next()){
+                if(rs.getString("senha_cliente").equals(senha)){
+                    cliente.setNome_cliente(rs.getString("nome_cliente"));
+                    cliente.setEmail_cliente(rs.getString("email_cliente"));
+                    cliente.setNumero_tel_cliente(rs.getString("telefone_cliente"));
+                    cliente.setSenha_cliente(rs.getString("senha_cliente"));
+                    ps.close();
+                    return cliente;
+                }
+                else{
+                    System.out.println("Senha Incorreta, tente novamente");
+                    ps.close();
+                    return cliente;
+                }
+            }
+        } catch (SQLException e) {
+            // TODO: handle exception
+            e.printStackTrace();
+        }
+        
+        return cliente;
+    }
+    
+    
+    public static boolean removerEvento(int idEvento) {
+        Connection com = Conexao.getConexao();
+        String sql = "DELETE FROM EVENTO WHERE id = ?";
+        
+        try {
+            PreparedStatement stmt = com.prepareStatement(sql);
+            stmt.setInt(1, idEvento);
+            int deletalinha = stmt.executeUpdate();
+            stmt.close();
+            return deletalinha > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+    
+        public static boolean removerCliente(int Id){
+            Connection com = Conexao.getConexao();
+            String sql = "DELETE FROM CLIENTES WHERE id = ?";
+            try {
+                PreparedStatement stmt = com.prepareStatement(sql);
+                stmt.setInt(1, Id);
+                int deletalinha = stmt.executeUpdate();
+                stmt.close();
+                return deletalinha > 0;
+              }catch (SQLException e) {
+            e.printStackTrace();
+             return false;
+            }
+        }
+
+        public static boolean diminuiIngresso(String nome){
+            String sql = "UPDATE EVENTO SET INGRESSOS_RESTANTES=? WHERE NOME_EVENTO=?";
+            int ingressos = buscarEventoPorNome(nome).getQuantidade_disponivel();
+            ingressos--;
+            try {
+                PreparedStatement ps = Conexao.getConexao().prepareStatement(sql);
+                
+                
+                ps.setInt(1, ingressos);
+                ps.setString(2, nome);
+                ps.execute();
+            } catch (SQLException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+            if(ingressos >= 1){
+                return true;
+            }
+            else{
+                return false;
+            }
+        }
+
+        
+        
+
+        
+        public static boolean atualizarQuantidadeIngressos(int eventoId, int novaQuantidade) {
+            String sql = "UPDATE EVENTO SET ingressos_restantes = ? WHERE id = ?";
+        
+            try {
+                PreparedStatement ps = Conexao.getConexao().prepareStatement(sql);
+                ps.setInt(1, novaQuantidade);
+                ps.setInt(2, eventoId);
+        
+                int rowsAffected = ps.executeUpdate();
+        
+                if (rowsAffected > 0) {
+                    // Atualização bem-sucedida
+                    return true;
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        
+            // Se algo der errado ou nenhum registro for atualizado
+            return false;
+        }
+        
+        
+        
+
+
+
+    }
+
+    
